@@ -63,6 +63,7 @@ jobs:
       - name: Setup OS dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.{list,sources}
           sudo apt-get update
           sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
             libssl-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev openssl \

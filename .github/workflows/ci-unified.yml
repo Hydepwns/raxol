@@ -446,7 +446,10 @@ jobs:
       # package needs it, so only this package pays for it.
       - name: Install inotify-tools
         if: matrix.package == 'raxol_symphony'
-        run: sudo apt-get update && sudo apt-get install -y inotify-tools
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.{list,sources}
+          sudo apt-get update
+          sudo apt-get install -y inotify-tools
 
       # `--check-locked` rather than a bare `deps.get`: a plain fetch REWRITES
       # a stale mix.lock in place and carries on, so a package whose committed
@@ -551,6 +554,7 @@ jobs:
 
       - name: Install pty drivers + NIF build deps
         run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.{list,sources}
           sudo apt-get update
           sudo apt-get install -y tmux expect build-essential autoconf m4 \
             libncurses5-dev libssl-dev
