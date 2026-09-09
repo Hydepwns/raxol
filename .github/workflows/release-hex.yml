@@ -1,0 +1,136 @@
+name: Publish Hex release train
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: "Existing v* tag whose exact commit will be published"
+        required: true
+        type: string
+      publish:
+        description: "Publish after preflight (off = validate only)"
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-hex-${{ inputs.release_ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Validate and publish public packages
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: dev
+      RAXOL_DEV_PORT: "4000"
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_ref }}
+          fetch-depth: 0
+
+      - name: Validate immutable release ref
+        env:
+          RELEASE_REF: ${{ inputs.release_ref }}
+        run: |
+          if [[ ! "$RELEASE_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_ref must be a vMAJOR.MINOR.PATCH tag"
+            exit 1
+          fi
+
+          tag_commit="$(git rev-parse "$RELEASE_REF^{commit}")"
+          head_commit="$(git rev-parse HEAD)"
+          if [ "$tag_commit" != "$head_commit" ]; then
+            echo "::error::$RELEASE_REF does not resolve to the checked-out commit"
+            exit 1
+          fi
+
+      - name: Set up Erlang and Elixir
+        id: beam
+        uses: erlef/setup-beam@v1
+        with:
+          version-file: mise.toml
+          version-type: strict
+
+      - name: Cache release dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+            packages/*/deps
+            packages/*/_build
+          key: hex-release-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.exs') }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            hex-release-${{ runner.os }}-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.exs') }}-
+
+      - name: Install release tooling
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get --check-locked
+
+      - name: Validate public release train
+        run: mix raxol.release.check
+
+      - name: Require noninteractive publishing key
+        if: inputs.publish == true
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          if [ -z "$HEX_API_KEY" ]; then
+            echo "::error::publish=true but the HEX_API_KEY secret is unset or empty."
+            exit 1
+          fi
+
+      # One job preserves the topological order. A failed run is resumable:
+      # versions already visible on Hex are skipped before the next publish.
+      - name: Publish packages in dependency order
+        if: inputs.publish == true
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          packages=(
+            "raxol_core:packages/raxol_core"
+            "raxol_sensor:packages/raxol_sensor"
+            "raxol_terminal:packages/raxol_terminal"
+            "raxol_mcp:packages/raxol_mcp"
+            "raxol_liveview:packages/raxol_liveview"
+            "raxol_plugin:packages/raxol_plugin"
+            "raxol_speech:packages/raxol_speech"
+            "raxol_watch:packages/raxol_watch"
+            "raxol:."
+            "raxol_agent:packages/raxol_agent"
+            "raxol_payments:packages/raxol_payments"
+            "raxol_telegram:packages/raxol_telegram"
+          )
+
+          for entry in "${packages[@]}"; do
+            IFS=: read -r package path <<< "$entry"
+            pushd "$path" >/dev/null
+
+            HEX_BUILD=1 mix deps.get
+            version="$(HEX_BUILD=1 mix run --no-start --no-compile --no-deps-check \
+              -e 'IO.write(Mix.Project.config()[:version])')"
+            release_url="https://hex.pm/api/packages/$package/releases/$version"
+
+            if curl --fail --silent --output /dev/null "$release_url"; then
+              echo "$package $version is already published; skipping"
+              popd >/dev/null
+              continue
+            fi
+
+            echo "::group::Publishing $package $version"
+            HEX_BUILD=1 mix hex.publish --dry-run
+            HEX_BUILD=1 mix hex.publish --yes
+            curl --fail --silent --show-error --output /dev/null \
+              --retry 12 --retry-all-errors --retry-delay 5 "$release_url"
+            echo "::endgroup::"
+
+            popd >/dev/null
+          done
