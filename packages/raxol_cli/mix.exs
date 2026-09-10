@@ -33,7 +33,7 @@ defmodule RaxolCli.MixProject do
   end
 
   # The `raxol` command. Burrito wraps the release into a self-contained
-  # executable per target; the `raxol` npm package (npm/) ships those binaries.
+  # executable per target; the `@raxol/cli` npm package (npm/) ships those binaries.
   # Build one target with `BURRITO_TARGET=<name> MIX_ENV=prod mix release`.
   defp releases do
     [

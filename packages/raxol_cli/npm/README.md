@@ -1,10 +1,10 @@
-# raxol
+# @raxol/cli
 
 Interactive AI agent and TUI toolkit in your terminal, as a self-contained
 binary. No Erlang, Elixir, or Node runtime needed at run time.
 
 ```bash
-npm install -g raxol
+npm install -g @raxol/cli
 raxol            # interactive AI agent
 raxol doctor     # what this install resolves: build, providers, config
 raxol update     # replace this binary with the latest verified release

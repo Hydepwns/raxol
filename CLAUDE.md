@@ -138,10 +138,10 @@ these need Elixir at run time:
 ```bash
 curl -fsSL https://raxol.io/install | bash   # scripts/install.sh, checksum-verified
 brew install droodotfoo/tap/raxol            # scripts/gen_homebrew_formula.sh emits the formula
-npm install -g raxol                         # wrapper + one per-platform binary
+npm install -g @raxol/cli                  # wrapper + one per-platform binary
 ```
 
-npm ships as a small `raxol` launcher plus per-platform packages
+npm ships as a small `@raxol/cli` launcher plus per-platform packages
 (`@raxol/cli-<platform>-<arch>`) declared as `optionalDependencies` with
 `os`/`cpu` set, so an install pulls one ~68MB binary instead of all four.
 `packages/raxol_cli/npm/scripts/pack.sh` builds them from `burrito_out` and

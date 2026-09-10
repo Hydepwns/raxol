@@ -1,7 +1,7 @@
-name: Release raxol npm package
+name: Release @raxol/cli npm package
 
-# Builds the self-contained `raxol` command binaries and assembles the `raxol`
-# npm package, so `npm i -g raxol` puts `raxol` on the PATH (no Erlang/Elixir).
+# Builds the self-contained `raxol` command binaries and assembles the
+# `@raxol/cli` npm package, so `npm i -g @raxol/cli` puts `raxol` on the PATH.
 # Every binary is built natively for its arch: Linux amd64/arm64 via Docker on
 # their own runners, macOS arm64 on a macOS runner (native builds avoid the
 # termbox NIF cross-compile hazard -- see docker/Dockerfile.raxol-cli).
@@ -187,7 +187,7 @@ jobs:
           path: packages/raxol_cli/burrito_out
 
       # Builds one @raxol/cli-<platform>-<arch> package per binary, each
-      # declaring os/cpu. The `raxol` wrapper lists them as optionalDependencies
+      # declaring os/cpu. The `@raxol/cli` wrapper lists them as optionalDependencies
       # so npm downloads only the matching one (~68MB, not ~270MB).
       - name: Build platform packages
         run: packages/raxol_cli/npm/scripts/pack.sh
@@ -209,25 +209,43 @@ jobs:
           if-no-files-found: error
 
       # npm publish is deliberately NOT wired to the tag. A `raxol-cli-v*` tag
-      # ships the release binaries (see the `release` job); claiming the `raxol`
-      # name on npm is a separate, deliberate act. Publish with a manual run:
+      # ships the release binaries (see the `release` job); publishing the
+      # `@raxol/cli` wrapper is a separate, deliberate act. Publish with:
       #   gh workflow run release-raxol-cli.yml -f publish=true
       #
       # Order matters: the platform packages go first. The wrapper pins them by
       # exact version, so publishing it against a registry that does not yet
-      # have them leaves a window where `npm i -g raxol` resolves nothing.
+      # have them leaves a window where `npm i -g @raxol/cli` resolves nothing.
       - name: Publish to npm
         if: inputs.publish == true
         working-directory: packages/raxol_cli/npm
         run: |
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+          set -euo pipefail
+
+          if [[ -z "${NODE_AUTH_TOKEN:-}" ]]; then
             echo "::error::publish=true but the NPM_TOKEN secret is unset or empty." >&2
             exit 1
           fi
+
+          publish_package() {
+            local directory="$1"
+            local manifest="$directory/package.json"
+            local name
+            local version
+            name="$(node -p "require(require('node:path').resolve(process.argv[1])).name" "$manifest")"
+            version="$(node -p "require(require('node:path').resolve(process.argv[1])).version" "$manifest")"
+
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already published; skipping"
+            else
+              (cd "$directory" && npm publish --access public)
+            fi
+          }
+
           for dir in platforms/*/; do
-            (cd "$dir" && npm publish --access public)
+            publish_package "$dir"
           done
-          npm publish --access public
+          publish_package "."
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
