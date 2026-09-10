@@ -514,36 +514,35 @@ than degrading. `mix raxol.check` runs the metadata half with
 gate; CI runs without that flag, where an untracked packaged file means the
 tarball would carry content that is not in the repo.
 
-Publish order matters (dependency chain):
+Publishing is tag-authorized and resumable:
+
+- A `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`. It calls the
+  reusable Hex workflow with the immutable tag, verifies that the tag matches
+  the root package version, waits for approval in the `release` environment,
+  publishes `Raxol.Release.PackageCheck.public_packages/0` in dependency order,
+  and creates the GitHub Release only after Hex succeeds.
+- A `raxol-cli-vMAJOR.MINOR.PATCH` tag runs
+  `.github/workflows/release-raxol-cli.yml`. It verifies the npm manifest
+  version, builds and smokes every native binary, waits for the same environment
+  approval, publishes the platform packages and `@raxol/cli`, then attaches the
+  binaries and checksums to the GitHub Release. npm trusted publishing uses OIDC
+  and emits provenance; `NPM_TOKEN` remains a migration fallback only.
+- Re-running either publisher skips versions already visible in the registry.
+
+Validate a Hex tag without publishing:
 
 ```bash
-# 1. No raxol deps (parallel)
-cd packages/raxol_sensor && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_core && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-
-# 2. Depend on raxol_core (parallel)
-cd packages/raxol_terminal && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_mcp && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_plugin && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_liveview && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_speech && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_watch && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-
-# 3. Main (depends on all above)
-HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-
-# 4. Depend on main raxol (parallel)
-cd packages/raxol_agent && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-cd packages/raxol_telegram && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-
-# 5. Depends on raxol_agent
-cd packages/raxol_payments && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
-
-# 6. Depends on raxol_payments (raxol_earn, not yet published)
-# cd packages/raxol_earn && HEX_BUILD=1 mix deps.get && HEX_BUILD=1 mix hex.publish
+gh workflow run release-hex.yml \
+  -f release_ref=v2.7.0 \
+  -f publish=false
 ```
 
-`HEX_BUILD=1` strips `path:` and `override:` from deps so `mix hex.build` sees only Hex packages. Without it, local path deps are used for development.
+The same command with `publish=true` resumes a partially published train after
+`release` environment approval.
+
+`HEX_BUILD=1` strips `path:` and `override:` from deps so `mix hex.build` sees
+only Hex packages. The release workflow sets it per package; do not export it
+globally.
 
 ## Project notes
 
